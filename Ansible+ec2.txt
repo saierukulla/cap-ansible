@@ -1,0 +1,91 @@
+Access key ID: AKIAXIWD7UVNJ6RMJ2BP
+Secret access key: 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
+
+apt-get update 
+apt install python3-pip
+
+ 
+
+
+
+pip install awscli 
+pip install boto
+
+ aws --version
+
+ 
+ now create user in aws IAM
+ username ansible, access : programatic
+ 
+ and give permission, ec2 full access
+ 
+ next and finish, we get access key to connect from command line.
+ 
+ 
+ Go to command line....
+ 
+ aws configure
+ 
+root@ubuntu:~/Training# aws configure
+AWS Access Key ID [None]: AKIAJHTG35I5DIE6HIKA
+AWS Secret Access Key [None]: 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
+Default region name [None]: ap-south-1
+Default output format [None]:
+
+
+Test: aws ec2 describe-instances --output table
+
+
+
+
+
+
+- name: Create EC2 Instance
+  hosts: localhost
+  tasks:
+    - ec2:
+        key_name: ravikey  #keyname 
+        instance_type: t2.micro
+        image: ami-4f0b4e20
+        wait: yes
+        group: all # security group name
+        count: 1
+        vpc_subnet_id: subnet-212e0b48
+        assign_public_ip: yes
+        region: ap-south-1
+      register: out
+   
+    - debug:
+        msg: "{{out}}"
+
+    - add_host:    # to add new instances to hostsfile
+        hostname: "{{item.private_ip}}"
+        groupname: webserver
+      with_items: "{{out.instances}}"
+
+    - wait_for:
+        host: "{{ item.private_ip }}"
+        port: 22
+        delay: 60
+        timeout: 320
+        state: started
+      with_items: "{{ out.instances }}"
+
+- name: Install Web Server
+  hosts: webserver
+  become: yes
+  tasks:
+    - name: Install web server
+      package: 
+        name: httpd
+        state: installed
+    - name: Start Web Server
+      service:
+        name: httpd
+        state: started
+
+
+
+
+
+ 
